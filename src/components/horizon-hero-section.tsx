@@ -196,7 +196,9 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
 
     const createStarField = () => {
       const { current: refs } = threeRefs;
-      const starCount = 5000;
+      // Reduce star count on mobile for better performance and to avoid clustering
+      const isMobile = window.innerWidth <= 768;
+      const starCount = isMobile ? 2500 : 5000;
       
       for (let i = 0; i < 3; i++) {
         const geometry = new THREE.BufferGeometry();
@@ -205,12 +207,21 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
         const sizes = new Float32Array(starCount);
 
         for (let j = 0; j < starCount; j++) {
+          // Improved random distribution to prevent linear clustering
           const radius = 200 + Math.random() * 800;
-          const theta = Math.random() * Math.PI * 2;
-          const phi = Math.acos(Math.random() * 2 - 1);
-
-          positions[j * 3] = radius * Math.sin(phi) * Math.cos(theta);
-          positions[j * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+          
+          // Use better random distribution for spherical coordinates
+          // This prevents the linear artifact you're seeing
+          const u = Math.random(); // [0, 1)
+          const v = Math.random(); // [0, 1)
+          
+          const theta = 2 * Math.PI * u; // azimuthal angle
+          const phi = Math.acos(2 * v - 1); // polar angle with uniform distribution
+          
+          // Convert spherical to cartesian with better precision
+          const sinPhi = Math.sin(phi);
+          positions[j * 3] = radius * sinPhi * Math.cos(theta);
+          positions[j * 3 + 1] = radius * sinPhi * Math.sin(theta);
           positions[j * 3 + 2] = radius * Math.cos(phi);
 
           // Color variation
@@ -238,7 +249,8 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
         const material = new THREE.ShaderMaterial({
           uniforms: {
             time: { value: 0 },
-            depth: { value: i }
+            depth: { value: i },
+            isMobile: { value: isMobile ? 1.0 : 0.0 }
           },
           vertexShader: `
             attribute float size;
@@ -246,6 +258,7 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
             varying vec3 vColor;
             uniform float time;
             uniform float depth;
+            uniform float isMobile;
             
             void main() {
               vColor = color;
@@ -257,19 +270,33 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
               pos.xy = rot * pos.xy;
               
               vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-              gl_PointSize = size * (300.0 / -mvPosition.z);
+              
+              // Adjust point size for mobile to prevent clustering
+              float sizeMultiplier = mix(300.0, 200.0, isMobile);
+              gl_PointSize = size * (sizeMultiplier / -mvPosition.z);
+              
+              // Clamp point size to prevent huge points on mobile
+              gl_PointSize = clamp(gl_PointSize, 0.5, 4.0);
+              
               gl_Position = projectionMatrix * mvPosition;
             }
           `,
           fragmentShader: `
             varying vec3 vColor;
+            uniform float isMobile;
             
             void main() {
-              float dist = length(gl_PointCoord - vec2(0.5));
-              if (dist > 0.5) discard;
+              float distance = length(gl_PointCoord - vec2(0.5));
               
-              float opacity = 1.0 - smoothstep(0.0, 0.5, dist);
-              gl_FragColor = vec4(vColor, opacity);
+              // Create soft circular stars with better mobile rendering
+              float alpha = smoothstep(0.5, 0.2, distance);
+              
+              // Reduce alpha on mobile to prevent over-bright stars
+              alpha *= mix(1.0, 0.7, isMobile);
+              
+              if (alpha < 0.01) discard;
+              
+              gl_FragColor = vec4(vColor, alpha);
             }
           `,
           transparent: true,
