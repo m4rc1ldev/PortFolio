@@ -196,9 +196,20 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
 
     const createStarField = () => {
       const { current: refs } = threeRefs;
-      // Reduce star count on mobile for better performance and to avoid clustering
+      // Better mobile detection and star distribution
       const isMobile = window.innerWidth <= 768;
-      const starCount = isMobile ? 2500 : 5000;
+      const isSmallMobile = window.innerWidth <= 428; // iPhone 13/14 width
+      const aspect = window.innerWidth / window.innerHeight;
+      
+      // Adaptive star count based on device
+      let starCount;
+      if (isSmallMobile) {
+        starCount = 1500; // Fewer stars for iPhone-sized screens
+      } else if (isMobile) {
+        starCount = 2000; // Medium for tablets
+      } else {
+        starCount = 5000; // Full count for desktop
+      }
       
       for (let i = 0; i < 3; i++) {
         const geometry = new THREE.BufferGeometry();
@@ -207,13 +218,32 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
         const sizes = new Float32Array(starCount);
 
         for (let j = 0; j < starCount; j++) {
-          // Improved random distribution to prevent linear clustering
-          const radius = 200 + Math.random() * 800;
+          // Adaptive radius based on screen size and aspect ratio
+          let radiusMin, radiusMax;
+          if (isSmallMobile) {
+            // Smaller radius for mobile to fit in view better
+            radiusMin = 150;
+            radiusMax = 600;
+          } else if (isMobile) {
+            radiusMin = 180;
+            radiusMax = 700;
+          } else {
+            radiusMin = 200;
+            radiusMax = 1000;
+          }
           
-          // Use better random distribution for spherical coordinates
-          // This prevents the linear artifact you're seeing
-          const u = Math.random(); // [0, 1)
-          const v = Math.random(); // [0, 1)
+          const radius = radiusMin + Math.random() * (radiusMax - radiusMin);
+          
+          // Enhanced random distribution with mobile-specific adjustments
+          let u = Math.random(); // [0, 1)
+          let v = Math.random(); // [0, 1)
+          
+          // For narrow aspect ratios (like iPhone), adjust distribution
+          if (aspect < 0.6) {
+            // Bias stars more towards the center and edges for better distribution
+            u = Math.pow(u, 0.8); // Slight bias towards edges
+            v = 0.1 + v * 0.8; // Avoid extreme poles
+          }
           
           const theta = 2 * Math.PI * u; // azimuthal angle
           const phi = Math.acos(2 * v - 1); // polar angle with uniform distribution
@@ -239,7 +269,16 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
           colors[j * 3 + 1] = color.g;
           colors[j * 3 + 2] = color.b;
 
-          sizes[j] = Math.random() * 2 + 0.5;
+          // Adaptive star sizes for different screen sizes
+          let starSize;
+          if (isSmallMobile) {
+            starSize = Math.random() * 1.2 + 0.3; // Smaller stars for iPhone
+          } else if (isMobile) {
+            starSize = Math.random() * 1.5 + 0.4; // Medium for tablets
+          } else {
+            starSize = Math.random() * 2 + 0.5; // Full size for desktop
+          }
+          sizes[j] = starSize;
         }
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -250,7 +289,9 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
           uniforms: {
             time: { value: 0 },
             depth: { value: i },
-            isMobile: { value: isMobile ? 1.0 : 0.0 }
+            isMobile: { value: isMobile ? 1.0 : 0.0 },
+            isSmallMobile: { value: isSmallMobile ? 1.0 : 0.0 },
+            aspect: { value: aspect }
           },
           vertexShader: `
             attribute float size;
@@ -259,6 +300,8 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
             uniform float time;
             uniform float depth;
             uniform float isMobile;
+            uniform float isSmallMobile;
+            uniform float aspect;
             
             void main() {
               vColor = color;
@@ -271,12 +314,25 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
               
               vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
               
-              // Adjust point size for mobile to prevent clustering
-              float sizeMultiplier = mix(300.0, 200.0, isMobile);
-              gl_PointSize = size * (sizeMultiplier / -mvPosition.z);
+              // Improved size calculation for different devices
+              float baseSize = 300.0;
+              if (isSmallMobile > 0.5) {
+                baseSize = 180.0; // Much smaller for iPhone screens
+              } else if (isMobile > 0.5) {
+                baseSize = 220.0; // Medium for tablets
+              }
               
-              // Clamp point size to prevent huge points on mobile
-              gl_PointSize = clamp(gl_PointSize, 0.5, 4.0);
+              // Adjust for aspect ratio - narrow screens need different sizing
+              if (aspect < 0.6) {
+                baseSize *= 0.8;
+              }
+              
+              gl_PointSize = size * (baseSize / -mvPosition.z);
+              
+              // Stricter clamping for mobile devices
+              float minSize = mix(0.5, 0.3, isSmallMobile);
+              float maxSize = mix(4.0, 2.5, isSmallMobile);
+              gl_PointSize = clamp(gl_PointSize, minSize, maxSize);
               
               gl_Position = projectionMatrix * mvPosition;
             }
@@ -284,15 +340,20 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
           fragmentShader: `
             varying vec3 vColor;
             uniform float isMobile;
+            uniform float isSmallMobile;
             
             void main() {
               float distance = length(gl_PointCoord - vec2(0.5));
               
               // Create soft circular stars with better mobile rendering
-              float alpha = smoothstep(0.5, 0.2, distance);
+              float alpha = smoothstep(0.5, 0.15, distance);
               
-              // Reduce alpha on mobile to prevent over-bright stars
-              alpha *= mix(1.0, 0.7, isMobile);
+              // Progressive alpha reduction for smaller devices
+              if (isSmallMobile > 0.5) {
+                alpha *= 0.6; // More subtle on iPhone
+              } else if (isMobile > 0.5) {
+                alpha *= 0.7; // Medium on tablets
+              }
               
               if (alpha < 0.01) discard;
               
