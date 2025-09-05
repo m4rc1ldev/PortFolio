@@ -57,6 +57,20 @@ export function ProjectsSidebar({ open, onClose }: ProjectsSidebarProps) {
             </AccordionItem>
 
 
+            <AccordionItem value="doze-studio">
+              <AccordionTrigger value="doze-studio" className="w-full text-left py-2 px-2 rounded hover:bg-white/5 transition">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">Doze Studio (Redesign)</span>
+                  <span className="project-dates">2025</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent value="doze-studio" className="px-2 pb-2">
+                <p className="opacity-90 text-sm">Redesigned site with GSAP + ScrollTrigger animations, smooth parallax & performant responsive UI.</p>
+                <a className="project-item mt-2" href="https://doze-studio-two.vercel.app/" target="_blank" rel="noreferrer">Open</a>
+              </AccordionContent>
+            </AccordionItem>
+
+
 
             <AccordionItem value="nads">
               <AccordionTrigger value="nads" className="w-full text-left py-2 px-2 rounded hover:bg-white/5 transition">

@@ -137,6 +137,17 @@
   overflow: hidden;
   background: radial-gradient(1200px 600px at 50% 20%, color-mix(in oklch, var(--foreground) 6%, transparent) 0%, transparent 60%), var(--background);
 }
+@media (max-width: 900px) {
+  .hero-container {
+    background: radial-gradient(900px 520px at 50% 25%, color-mix(in oklch, var(--foreground) 7%, transparent) 0%, transparent 65%), var(--background);
+  }
+}
+@media (max-width: 640px) {
+  .hero-container {
+    background: radial-gradient(700px 480px at 50% 30%, color-mix(in oklch, var(--foreground) 10%, transparent) 0%, transparent 70%), var(--background);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
 .hero-content.center-content {
   min-height: 100svh;
   display: grid;

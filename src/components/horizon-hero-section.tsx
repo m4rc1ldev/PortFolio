@@ -115,6 +115,26 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
 
   // Initialize Three.js
   useEffect(() => {
+    // Helper declared before usage to avoid TDZ errors when called inside initThree
+    const adjustCameraForAspect = () => {
+      const { current: refs } = threeRefs;
+      if (!refs.camera) return;
+      const aspect = window.innerWidth / window.innerHeight;
+      if (aspect < 0.65) {
+        refs.camera.fov = 82; refs.camera.position.set(0, 38, 140);
+      } else if (aspect < 0.85) {
+        refs.camera.fov = 78; refs.camera.position.set(0, 35, 125);
+      } else if (aspect > 2.1) {
+        refs.camera.fov = 65; refs.camera.position.set(0, 26, 130);
+      } else if (aspect > 1.7) {
+        refs.camera.fov = 68; refs.camera.position.set(0, 28, 120);
+      } else {
+        refs.camera.fov = 72; refs.camera.position.set(0, 30, 110);
+      }
+      refs.camera.aspect = aspect;
+      refs.camera.updateProjectionMatrix();
+    };
+
     const initThree = () => {
       const { current: refs } = threeRefs;
       
@@ -129,8 +149,8 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
         0.1,
         2000
       );
-      refs.camera.position.z = 100;
-      refs.camera.position.y = 20;
+  // Initial camera placement (will be adapted for aspect ratio)
+  refs.camera.position.set(0, 30, 100);
 
       // Renderer
       if (!canvasRef.current) return;
@@ -139,7 +159,7 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
         antialias: true,
         alpha: true
       });
-      refs.renderer.setSize(window.innerWidth, window.innerHeight);
+  refs.renderer.setSize(window.innerWidth, window.innerHeight);
       refs.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       refs.renderer.toneMapping = THREE.ACESFilmicToneMapping;
       refs.renderer.toneMappingExposure = 0.5;
@@ -158,11 +178,14 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
       refs.composer.addPass(bloomPass);
 
       // Create scene elements
-      createStarField();
+  createStarField();
       createNebula();
       createMountains();
       createAtmosphere();
       getLocation();
+
+  // Adjust after scene objects exist
+  adjustCameraForAspect();
 
       // Start animation
       animate();
@@ -455,14 +478,13 @@ const HorizonHero = ({ endRef }: { endRef?: React.RefObject<HTMLDivElement | nul
 
     initThree();
 
-    // Handle resize
+  // Handle resize
     const handleResize = () => {
       const { current: refs } = threeRefs;
       if (refs.camera && refs.renderer && refs.composer) {
-        refs.camera.aspect = window.innerWidth / window.innerHeight;
-        refs.camera.updateProjectionMatrix();
         refs.renderer.setSize(window.innerWidth, window.innerHeight);
         refs.composer.setSize(window.innerWidth, window.innerHeight);
+        adjustCameraForAspect();
       }
     };
 

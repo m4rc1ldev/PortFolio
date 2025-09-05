@@ -9,7 +9,6 @@ const Footer = dynamic(() => import("@/components/footer-section").then(m => m.F
 export default function Home() {
   const [footerVisible, setFooterVisible] = useState(false);
   const heroEndRef = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
     let observer: IntersectionObserver | undefined;
     let raf = 0;
