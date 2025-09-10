@@ -22,7 +22,6 @@ export function ProjectsSidebar({ open, onClose }: ProjectsSidebarProps) {
               <AccordionTrigger value="console" className="w-full text-left py-2 px-2 rounded hover:bg-white/5 transition">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Survey Console</span>
-                  <span className="project-dates">Jun  – Jul 2025</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent value="console" className="px-2 pb-2">
@@ -34,7 +33,6 @@ export function ProjectsSidebar({ open, onClose }: ProjectsSidebarProps) {
               <AccordionTrigger value="genai" className="w-full text-left py-2 px-2 rounded hover:bg-white/5 transition">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Gen AI</span>
-                  <span className="project-dates">Aug – Sep 2025</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent value="genai" className="px-2 pb-2">
@@ -47,7 +45,6 @@ export function ProjectsSidebar({ open, onClose }: ProjectsSidebarProps) {
               <AccordionTrigger value="responads" className="w-full text-left py-2 px-2 rounded hover:bg-white/5 transition">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Responads</span>
-                  <span className="project-dates">April - May 2025</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent value="responads" className="px-2 pb-2">
@@ -61,7 +58,6 @@ export function ProjectsSidebar({ open, onClose }: ProjectsSidebarProps) {
               <AccordionTrigger value="doze-studio" className="w-full text-left py-2 px-2 rounded hover:bg-white/5 transition">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Doze Studio (Redesign)</span>
-                  <span className="project-dates">2025</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent value="doze-studio" className="px-2 pb-2">
@@ -76,7 +72,6 @@ export function ProjectsSidebar({ open, onClose }: ProjectsSidebarProps) {
               <AccordionTrigger value="nads" className="w-full text-left py-2 px-2 rounded hover:bg-white/5 transition">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Nads Research</span>
-                  <span className="project-dates">Mar 2025</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent value="nads" className="px-2 pb-2">
